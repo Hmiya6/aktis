@@ -1,8 +1,18 @@
 
 # aktis text browser
 
+HTML を Markdown として表示する CLI のテキストブラウザです.  
+ブラウザとしての最小構成を目指しています.  
+
 A CLI text browser, which renders HTML as Markdown file.  
 Aktis contains only minimal features as browser.
+
+* HTTP プロトコルのみをサポート
+* GET メソッドのみをサポート
+* ホスト OS の DNS リゾルバを使用 (自作 DNS でない)
+* ホスト OS の TCP ソケットを使用 (自作 TCP/IP スタックでない)
+* シンプルな HTML パーサを実装
+* 最低限の外部クレートのみを使用 (現状では不使用)
 
 * supports only HTTP protocol
 * supports only GET method
@@ -10,3 +20,17 @@ Aktis contains only minimal features as browser.
 * uses host OS's TCP socket
 * has simple HTML parser
 * uses minimum (or no) external crate
+
+
+## TODO
+* HTML パーサを実装する
+* UI を実装する
+* エラーハンドリングを行う. (現在は `unwrap()` でパニックさせている)
+* 可読性の向上させる
+* 他のメソッドを実装する 
+
+* Add HTML parser
+* Add user interface
+* Add proper error handling
+* Make the codes more readable
+* Add other methods (such as POST)
