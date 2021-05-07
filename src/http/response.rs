@@ -1,5 +1,26 @@
 use std::collections::HashMap;
 use crate::utils::consumer::Consumer;
+use std::fmt;
+use std::error::Error;
+
+// ERROR HANDLING ------------------------
+#[derive(Debug)]
+pub enum ResponseError {
+    NoLine,
+}
+
+impl fmt::Display for ResponseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ResponseError::NoLine => write!(f, "Response error: cannot find the first line, invalid HTTP response"),
+            _ => write!(f, "Undefined error"),
+        }
+    }
+}
+
+impl Error for ResponseError {}
+
+// ---------------------------------------
 
 // Example HTTP Response Header
 // ```
@@ -22,7 +43,6 @@ use crate::utils::consumer::Consumer;
 // ```
 
 
-
 pub struct Response {
     status_line: StatusLine,
     header: Header,
@@ -31,21 +51,55 @@ pub struct Response {
 
 impl Response {
     
-    pub fn parse(response: &str) -> Self {
+    pub fn parse(response: &str) -> Result<Self, Box<dyn Error>> {
         // println!("RAW------:\n{:?}", response);
-        let (first_line, rest) = response.split_once("\r\n").unwrap();
-        let status_line = StatusLine::parse(first_line);
+        let (first_line, rest) = match response.split_once("\r\n") {
+            Some(v) => v,
+            None => return Err(Box::new(ResponseError::NoLine)),
+        };
+        let status_line = StatusLine::parse(first_line)?;
         
         let (header_str, rest) = rest.split_once("\r\n\r\n").unwrap();
-        let header = Header::parse(header_str);
+        let header = Header::parse(header_str)?;
 
-        Self {
+        Ok(Self {
             status_line,
             header,
             body: rest.to_string(),
+        })
+    }
+}
+
+
+// ERRROR HANDLING -----------------------
+//
+// TODO
+// - validate status line (status, status code, and protocol)
+#[derive(Debug)]
+pub enum StatusLineError {
+    NoStatus,
+    NoStatusCode,
+    NoProtocol,
+}
+
+impl fmt::Display for StatusLineError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NoStatus => write!(f, "Status line error: there is no valid status"),
+            NoStatusCode => write!(f, "Status line error: there is no valid status code"),
+            NoProtocol => write!(f, "Status line error: there is no valid protocol"),
+            _ => write!(f, "Undefined error"),
         }
     }
 }
+
+impl Error for StatusLineError {}
+// ---------------------------------------
+
+// Example status line:
+// ```
+// HTTP/1.1 200 OK
+// ```
 
 pub struct StatusLine {
     status: String,
@@ -54,7 +108,7 @@ pub struct StatusLine {
 }
 
 impl StatusLine {
-    pub fn parse(line: &str) -> Self {
+    pub fn parse(line: &str) -> Result<Self, StatusLineError> {
 
         let mut con = Consumer::new(line);
         
@@ -63,7 +117,7 @@ impl StatusLine {
                 con.skip_space();
                 s
             },
-            None => panic!("Invalid Response: there is no status line"),
+            None => return Err(StatusLineError::NoProtocol),
         };
 
         let status_code = match con.to_usize() {
@@ -71,7 +125,7 @@ impl StatusLine {
                 con.skip_space();
                 code
             },
-            None => panic!("Invalid Response: there is no status code"),
+            None => return Err(StatusLineError::NoStatusCode),
         };
 
         let status = match con.next_until_space() {
@@ -79,35 +133,57 @@ impl StatusLine {
                 con.skip_space();
                 s
             },
-            None => panic!("Invalid Response: there is no status"),
+            None => return Err(StatusLineError::NoStatus),
         };
 
-        Self {
+        Ok(Self {
             status,
             status_code,
             proto,
+        })
+    }
+}
+
+// ERROR HANDING -------------------------
+#[derive(Debug)]
+pub enum HeaderError {
+    InvalidHeader(String),
+}
+
+impl fmt::Display for HeaderError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            HeaderError::InvalidHeader(s) => write!(f, "Response header error: found invalid header: `{}`", s),
+            _ => write!(f, "Undefined error"),
         }
     }
 }
+
+impl Error for HeaderError {}
+// ---------------------------------------
 
 
 pub struct Header(HashMap<String, String>);
 
 impl Header {
-    pub fn parse(src: &str) -> Self {
+    pub fn parse(src: &str) -> Result<Self, HeaderError> {
         let mut header = Self(HashMap::new());
         let lines = src.split("\r\n");
-        // println!("{:?}", lines.to_owned().collect::<Vec<&str>>());
+
         for line in lines {
-            // println!("{}", line);
-            let (key, value) = line.split_once(":").unwrap();
+            let (key, value) = match line.split_once(":") {
+                Some(v) => v,
+                None => return Err(HeaderError::InvalidHeader(line.to_string())),
+            };
             header.0.insert(key.to_string(), value.trim().to_string());
         }
-        header
+        Ok(header)
     }
 }
 
 
+
+// test --------------------------------
 #[cfg(test)]
 mod test {
     use super::*;
@@ -130,7 +206,7 @@ X-Cache: HIT\r
 Content-Length: 648\r
 \r
 body";
-        let res = Response::parse(raw_res);
+        let res = Response::parse(raw_res).unwrap();
         
         assert_eq!(res.status_line.status, "OK");
         assert_eq!(res.status_line.status_code, 200);
