@@ -13,8 +13,8 @@ pub enum RequestError {
 impl fmt::Display for RequestError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NoHost => write!(f, "Request error: there is no `Host` field in the request"),
-            _ => write!(f, "Undefined error: I don't know you are here")
+            Self::NoHost => write!(f, "Request error: there is no `Host` field in the request"),
+            // _ => write!(f, "Undefined error: I don't know you are here"),
         }
     }
 }
@@ -124,8 +124,8 @@ pub enum HeadError {
 impl fmt::Display for HeadError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
-            HeadError::NoHost => write!(f, "Head error: There is no `Host` field in HTTP request head"),
-            _ => write!(f, "Undefined error"),
+            Self::NoHost => write!(f, "Head error: There is no `Host` field in HTTP request head"),
+            // _ => write!(f, "Undefined error"),
         }
     }
 }

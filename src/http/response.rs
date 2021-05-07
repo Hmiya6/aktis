@@ -12,8 +12,8 @@ pub enum ResponseError {
 impl fmt::Display for ResponseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ResponseError::NoLine => write!(f, "Response error: cannot find the first line, invalid HTTP response"),
-            _ => write!(f, "Undefined error"),
+            Self::NoLine => write!(f, "Response error: cannot find the first line, invalid HTTP response"),
+            // _ => write!(f, "Undefined error"),
         }
     }
 }
@@ -85,10 +85,10 @@ pub enum StatusLineError {
 impl fmt::Display for StatusLineError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NoStatus => write!(f, "Status line error: there is no valid status"),
-            NoStatusCode => write!(f, "Status line error: there is no valid status code"),
-            NoProtocol => write!(f, "Status line error: there is no valid protocol"),
-            _ => write!(f, "Undefined error"),
+            Self::NoStatus => write!(f, "Status line error: there is no valid status"),
+            Self::NoStatusCode => write!(f, "Status line error: there is no valid status code"),
+            Self::NoProtocol => write!(f, "Status line error: there is no valid protocol"),
+            // _ => write!(f, "Undefined error"),
         }
     }
 }
@@ -153,8 +153,8 @@ pub enum HeaderError {
 impl fmt::Display for HeaderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            HeaderError::InvalidHeader(s) => write!(f, "Response header error: found invalid header: `{}`", s),
-            _ => write!(f, "Undefined error"),
+            Self::InvalidHeader(s) => write!(f, "Response header error: found invalid header: `{}`", s),
+            // _ => write!(f, "Undefined error"),
         }
     }
 }
