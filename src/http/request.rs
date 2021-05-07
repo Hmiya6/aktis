@@ -1,6 +1,28 @@
+use std::fmt;
+use std::error::Error;
 use std::collections::HashMap;
 use crate::http::Method;
 use crate::http::url::URL;
+
+// ERROR HANDLING -------------------
+#[derive(Debug)]
+pub enum RequestError {
+    NoHost
+}
+
+impl fmt::Display for RequestError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NoHost => write!(f, "Request error: there is no `Host` field in the request"),
+            _ => write!(f, "Undefined error: I don't know you are here")
+        }
+    }
+}
+
+impl Error for RequestError {}
+
+// ----------------------------------
+
 
 // Example HTTP Request
 // ```
@@ -25,23 +47,23 @@ pub struct Request {
 
 impl Request {
 
-    pub fn get(url: &str) -> Self {
-        let url = URL::parse(url);
-        Self::new(
+    pub fn get(url: &str) -> Result<Self, Box<dyn Error>> {
+        let url = URL::parse(url)?;
+        Ok(Self::new(
             &url,
             Method::GET,
             Head::new(&url.host()),
             None,
-        )
+        ))
     }
 
-    pub fn read_host(&self) -> String {
+    pub fn read_host(&self) -> Result<String, RequestError> {
         let head = &self.head;
         let host = match head.0.get("Host") {
             Some(s) => s.clone(),
-            None => panic!("No valid Host"),
+            None => return Err(RequestError::NoHost),
         };
-        host
+        Ok(host)
     }
 
     // pub fn post(url: &str, body: &str) -> Self {
@@ -60,8 +82,8 @@ impl Request {
 
     }
 
-    pub fn build(&mut self) -> String {
-        format!("{}{}\r\n{}", self.line.build(), self.head.build(), self.body)
+    pub fn build(&mut self) -> Result<String, Box<dyn Error>> {
+        Ok(format!("{}{}\r\n{}", self.line.build(), self.head.build()?, self.body))
     }
  
 }
@@ -93,6 +115,25 @@ impl RequestLine {
 }
 
 
+// ERROR HANDLING --------------------------
+#[derive(Debug)]
+pub enum HeadError {
+    NoHost
+}
+
+impl fmt::Display for HeadError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self {
+            HeadError::NoHost => write!(f, "Head error: There is no `Host` field in HTTP request head"),
+            _ => write!(f, "Undefined error"),
+        }
+    }
+}
+
+impl Error for HeadError {}
+// -----------------------------------------
+
+
 pub struct Head(HashMap<String, String>);
 
 impl Head {
@@ -110,13 +151,17 @@ impl Head {
         self.0.remove(key);
     }
 
-    pub fn build(&mut self) -> String {
-        let mut result = format!("Host: {}\r\n", self.0["Host"]);
+    pub fn build(&mut self) -> Result<String, HeadError> {
+        let host = match self.0.get("Host") {
+            Some(s) => s,
+            None => return Err(HeadError::NoHost),
+        };
+        let mut result = format!("Host: {}\r\n", host);
         self.remove("Host");
         for (k, v) in self.0.drain() {
             result = format!("{}{}:{}\r\n", result, k, v);
         }
-        result
+        Ok(result)
     }
 }
 
@@ -130,7 +175,7 @@ mod test {
     fn test_parse() {
         let url = "example.com";
 
-        let req = Request::get(url);
+        let req = Request::get(url).unwrap();
 
         assert_eq!(req.line.path, "/");
         assert_eq!(req.line.protocol, "http");
@@ -140,8 +185,8 @@ mod test {
     
     #[test]
     fn test_build() {
-        let mut req = Request::get("example.com");
-        let raw_req = req.build();
+        let mut req = Request::get("example.com").unwrap();
+        let raw_req = req.build().unwrap();
 
         println!("{}", raw_req);
     }
