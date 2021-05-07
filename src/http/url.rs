@@ -1,10 +1,26 @@
-
+use std::error::Error;
+use std::fmt;
 use crate::utils::consumer::Consumer;
 
+// ERROR HANDLING ----------------------
 #[derive(Debug)]
 pub enum URLError {
     NoHost,
 }
+
+impl fmt::Display for URLError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            URLError::NoHost => write!(f, "URL error: there is no host."),
+            _ => write!(f, "Undefined error: I don't know why you are here."),
+        }
+    }
+}
+
+impl Error for URLError {}
+
+
+// ------------------------------------
 
 // URL = (scheme "://")? host (path)? 
 pub struct URL {
