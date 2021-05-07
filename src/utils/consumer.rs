@@ -175,7 +175,7 @@ impl Consumer {
     }
 
 
-    // Example: read http protocol
+    // Example: read URL
     // ```rust
     // let mut consumer = Consumer::new("http://example.com/rust");
     // let protocol = consumer.next_until("://").unwrap(); // == "http"
