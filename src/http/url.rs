@@ -1,6 +1,11 @@
 
 use crate::utils::consumer::Consumer;
 
+#[derive(Debug)]
+pub enum URLError {
+    NoHost,
+}
+
 // URL = (scheme "://")? host (path)? 
 pub struct URL {
     scheme: String,
@@ -10,7 +15,7 @@ pub struct URL {
 }
 
 impl URL {
-    pub fn parse(url: &str) -> Self {
+    pub fn parse(url: &str) -> Result<Self, URLError> {
         
         let mut consumer = Consumer::new(url);
         
@@ -26,7 +31,7 @@ impl URL {
             Some(s1) => s1,
             None => match consumer.next_until_space() {
                 Some(s2) => s2,
-                None => "example.com".to_string(),
+                None => return Err(URLError::NoHost),
             },
         };
 
@@ -35,12 +40,12 @@ impl URL {
             None => "/".to_string(),
         };
 
-        Self {
+        Ok(Self {
             scheme,
             host,
             port: 80,
             path,
-        }
+        })
     }
 
     pub fn scheme(&self) -> String {
@@ -74,7 +79,7 @@ mod test {
 
     fn test_parse(url: &str, scheme: &str, host: &str, path: &str) {
         println!("{}", url);
-        let url = URL::parse(url);
+        let url = URL::parse(url).unwrap();
         
         assert_eq!(url.scheme, scheme);
         assert_eq!(url.host, host);
