@@ -27,7 +27,7 @@ impl Consumer {
     
     // Inner function for `next` and `next_n`
     // Return next char if `self.queue` has the next element,
-    fn next_char(&mut self) -> Option<char> {
+    pub fn next_char(&mut self) -> Option<char> {
         if self.pos < self.queue.len() {
             let res = self.queue[self.pos];
             self.pos +=1;
@@ -93,7 +93,7 @@ impl Consumer {
     }
     
     // inner function for mainly `peek` and `peek_n`
-    fn peek_char(&self) -> Option<char> {
+    pub fn peek_char(&self) -> Option<char> {
         let res: char;
         if self.pos < self.queue.len() {
             res = self.queue[self.pos];
@@ -202,6 +202,24 @@ impl Consumer {
             }
             n += 1;
         }
+    }
+
+    pub fn next_while(&mut self, f: Box<dyn Fn(char) -> bool>) -> Option<String> {
+        let mut n = 1;
+        let mut ret = String::new();
+        loop {
+            match self.peek_char() {
+                Some(c) => {
+                    if !f(c) {
+                        break;
+                    }
+                    self.next();
+                    ret.push(c);
+                },
+                None => break,
+            }
+        }
+        Some(ret)
     }
 }
 
