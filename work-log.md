@@ -1,6 +1,6 @@
 
 # aktis work log
-edited: 2021-05-12
+edited: 2021-05-15
 
 ---
 
@@ -23,8 +23,81 @@ edited: 2021-05-12
 - `http::client::Client::get()` の整理
 - URL パーサの改善
 - HTTP レスポンス パーサの改善
+- `Consumer` 名前が適切か否か考える
 
 ---
+
+# Consumer について
+
+Rust のイテレータが言語処理で使うには少し使いづらかった (1字ずつしか消費できないなど). 
+
+# HTTP リクエスト
+
+## 必須な要素
+- 一番上の行 (リクエストライン, start line)
+- `Host` フィールド (`HTTP/1.1` 以上) 
+
+telnet で実験 (リクエストの送信先: [example.com](https://example.com))
+
+### 1. リクエストラインのみを送信
+
+400 Bad Request が返される
+
+```sh
+% telnet example.com 80
+Trying 93.184.216.34...
+Connected to example.com.
+Escape character is '^]'.
+GET / HTTP/1.1 # リクエストラインを入力
+
+HTTP/1.1 400 Bad Request
+Content-Type: text/html
+Content-Length: 349
+Connection: close
+Date: Sat, 15 May 2021 05:48:04 GMT
+Server: ECSF (mic/9B12)
+
+# レスポンスボディ省略
+Connection closed by foreign host.
+```
+### 2. リクエストライン + Host の送信
+
+200 OK が返ってくる
+
+```sh
+% telnet example.com 80
+Trying 93.184.216.34...
+Connected to example.com.
+Escape character is '^]'.
+GET / HTTP/1.1 # リクエストラインを入力
+Host: example.com # Host フィールドを入力
+
+HTTP/1.1 200 OK
+Age: 392303
+Cache-Control: max-age=604800
+Content-Type: text/html; charset=UTF-8
+Date: Sat, 15 May 2021 05:48:48 GMT
+Etag: "3147526947+ident"
+Expires: Sat, 22 May 2021 05:48:48 GMT
+Last-Modified: Thu, 17 Oct 2019 07:18:26 GMT
+Server: ECS (mic/9A9C)
+Vary: Accept-Encoding
+X-Cache: HIT
+Content-Length: 1256
+
+# レスポンスボディ省略
+```
+
+### 参考
+- [Host -HTTP|MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Host)
+
+# HTTP レスポンスの解析
+
+レスポンスの各行は `\r\n` で分割されるので、
+1. 最初の `\r\n` まではステータスライン、
+2. `\r\n\r\n` まではヘッダ
+3. `\r\n\r\n` よりも後はレスポンスボディ
+として分割できる.
 
 # 独自エラーのエラーハンドリング
 独自エラーに `std::error::Error` トレイトを実装して、 `Result<T, Box<dyn Error>>` でまとめて返す.
